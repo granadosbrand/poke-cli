@@ -1,70 +1,83 @@
 package main
 
 import (
-	"bufio"
 	"fmt"
-	"os"
+	"time"
+
+	"github.com/granadosbrand/poke-cli/internal/pokeapi"
+	"github.com/granadosbrand/poke-cli/internal/pokecache"
 )
 
 type cliCommand struct {
 	name        string
 	description string
-	callback    func() error
+	callback    func(*config, ...string) error
 }
 
-func commandHelp() error {
-	fmt.Println("Aiudaaa")
-	return nil
+type config struct {
+	pokeapiClient           pokeapi.Client
+	nextLocationAreaURL     *string
+	previousLocationAreaURL *string
+	pokeCache               pokecache.Cache
+	caugthPokemons          map[string]pokeapi.Pokemon
 }
 
-func commandExit() error {
-	fmt.Println("amonosss")
-	return nil
-}
 func commands() map[string]cliCommand {
 
 	return map[string]cliCommand{
 		"help": {
-			name:        "Help",
-			description: "Displays a help message",
+			name:        "help",
+			description: "	Displays a help message",
 			callback:    commandHelp,
 		},
 		"exit": {
-			name:        "Exit",
-			description: "Exit poke-cli",
-			callback:    commandExit,
+			name:        "exit",
+			description: "  Exit poke-cli",
+			callback:    exitCommand,
 		},
-	}
-
-}
-
-func console(commands map[string]cliCommand) {
-
-	for {
-		scanner := bufio.NewScanner(os.Stdin)
-		fmt.Print("poke-cli > ")
-		scanner.Scan() // Lee la próxima línea de input
-		cmdString := scanner.Text()
-
-		switch cmdString {
-		case "help":
-			fmt.Println("Usage: ")
-			for _, command := range commands {
-				fmt.Println(command.name, command.description)
-			}
-		case "exit":
-			return
-
-		default:
-			fmt.Println("Undefined command")
-
-		}
-
+		"map": {
+			name:        "map",
+			description: "  Displays the names of 20 location areas in the Pokémon world.",
+			callback:    mapCommand,
+		},
+		"mapb": {
+			name:        "mapb",
+			description: "  Displays the previous 20 location areas in the Pokémon world.",
+			callback:    mapbCommand,
+		},
+		"explore": {
+			name:        "explore <area>",
+			description: "  Display a list of pokemon in a given area",
+			callback:    explore,
+		},
+		"catch": {
+			name:        "catch <pokemon_name>",
+			description: "  Catch a Pokémon",
+			callback:    catch,
+		},
+		"inspect": {
+			name:        "inspect <pokemon_name>",
+			description: "  Lets you see the details of the Pokémons you have already caught.",
+			callback:    inspectCallback,
+		},
+		"pokedex": {
+			name:        "pokedex",
+			description: "  List of the Pokémons you have already caught.",
+			callback:    pokedexCallback,
+		},
 	}
 
 }
 
 func main() {
+
+	cfg := config{
+		pokeapiClient:  pokeapi.NewClient(5 * time.Minute),
+		caugthPokemons: map[string]pokeapi.Pokemon{},
+	}
+
 	fmt.Println("¡Welcome to Poke-Cli!")
-	console(commands())
+	fmt.Println("Type help to see available commands")
+	newConsole(&cfg)
+
 }
